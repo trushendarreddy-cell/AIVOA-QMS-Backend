@@ -88,37 +88,7 @@ MySQL Database
 | GET | `/api/complaints` | Retrieve all complaints |
 | PATCH | `/api/complaints/{id}/status` | Update complaint status |
 
----
 
-## Installation
-
-Install the required dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Create a `.env` file:
-
-```env
-GROQ_API_KEY=Used api key from grok llama-3.3-70b-versatile
-```
-
-Update the MySQL connection in `database.py`.
-
-Run the application:
-
-```bash
-uvicorn main:app --reload
-```
-
-The backend will be available at:
-
-```
-http://localhost:8000
-```
-
----
 
 ## Author
 
