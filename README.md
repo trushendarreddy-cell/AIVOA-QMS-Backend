@@ -101,7 +101,7 @@ pip install -r requirements.txt
 Create a `.env` file:
 
 ```env
-GROQ_API_KEY=your_api_key
+GROQ_API_KEY=Used api key from grok llama-3.3-70b-versatile
 ```
 
 Update the MySQL connection in `database.py`.
