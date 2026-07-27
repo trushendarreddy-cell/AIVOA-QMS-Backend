@@ -93,5 +93,10 @@ MySQL Database
 ## Author
 
 **T. Rushendar Reddy**
-email:trushendarreddy@gmail.com
-B.Tech – Artificial Intelligence and Machine Learning
+
+Email:trushendarreddy@gmail.com
+
+B.Tech in Artificial Intelligence and Machine Learning
+
+Vignan University
+Hyderabad,Telangana
