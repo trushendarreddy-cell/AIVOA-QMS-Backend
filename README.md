@@ -98,5 +98,6 @@ Email:trushendarreddy@gmail.com
 
 B.Tech in Artificial Intelligence and Machine Learning
 
-Vignan University
+Vignan University,
+
 Hyderabad,Telangana
