@@ -93,5 +93,5 @@ MySQL Database
 ## Author
 
 **T. Rushendar Reddy**
-
+email:trushendarreddy@gmail.com
 B.Tech – Artificial Intelligence and Machine Learning
