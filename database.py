@@ -1,9 +1,18 @@
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Update with your actual MySQL username, password, and port
-DATABASE_URL = "mysql+pymysql://root:password@localhost:3306/aivoa_qms" 
+load_dotenv()
+
+# Was a hardcoded MySQL credential before. Read from the environment so the
+# database can be pointed anywhere without editing tracked source.
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "mysql+pymysql://root:password@localhost:3306/aivoa_qms",
+)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
