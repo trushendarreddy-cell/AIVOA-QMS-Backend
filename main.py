@@ -173,21 +173,25 @@ class StatusUpdateRequest(BaseModel):
 
 @app.patch("/api/complaints/{complaint_id}/status")
 def update_complaint_status(complaint_id: int, req: StatusUpdateRequest, db: Session = Depends(get_db)):
+    complaint = db.query(ComplaintDB).filter(ComplaintDB.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    valid_statuses = ["OPEN", "UNDER_INVESTIGATION", "QA_REVIEW", "CLOSED"]
+    if req.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status workflow value")
+
+    # Only genuine database failures reach here. The previous version wrapped
+    # the whole body in except Exception, which swallowed its own 404 and 400
+    # and reported every client error as a 500.
     try:
-        complaint = db.query(ComplaintDB).filter(ComplaintDB.id == complaint_id).first()
-        if not complaint:
-            raise HTTPException(status_code=404, detail="Complaint not found")
-        
-        valid_statuses = ["OPEN", "UNDER_INVESTIGATION", "QA_REVIEW", "CLOSED"]
-        if req.status not in valid_statuses:
-            raise HTTPException(status_code=400, detail="Invalid status workflow value")
-            
         complaint.status = req.status
         db.commit()
-        return {"message": f"Status updated to {req.status}", "id": complaint.id, "status": complaint.status}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+    return {"message": f"Status updated to {req.status}", "id": complaint.id, "status": complaint.status}
 
 # Initialize database table structures
 init_db()
