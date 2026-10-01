@@ -9,11 +9,39 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
-    temperature=0.1,
-    groq_api_key=os.getenv("GROQ_API_KEY")
-)
+
+def _build_llm():
+    """Create the Groq client lazily.
+
+    This used to run at import time, which meant main.py could not be imported
+    at all without GROQ_API_KEY set -- the CRUD endpoints and the duplicate
+    check have no need for an LLM but could not start without one. Building on
+    first use keeps those endpoints usable and lets the test suite run offline.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return None
+    return ChatGroq(
+        model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        temperature=0.1,
+        groq_api_key=api_key,
+    )
+
+
+llm = _build_llm()
+
+
+def get_llm():
+    """Return the shared client, building it if it was not available at import."""
+    global llm
+    if llm is None:
+        llm = _build_llm()
+    if llm is None:
+        raise RuntimeError(
+            "GROQ_API_KEY is not set. The extraction and risk-assessment "
+            "workflows need it; the other endpoints do not."
+        )
+    return llm
 
 class ExtractedComplaintData(BaseModel):
     customerName: Optional[str] = Field(description="Name of the customer, hospital, or distributor reporting the issue.", default="Unknown Customer")
@@ -73,7 +101,7 @@ def extract_node(state: QMSState):
         ("human", "New Instruction / Update:\n{text}")
     ])
     
-    structured_llm = llm.with_structured_output(ExtractedComplaintData)
+    structured_llm = get_llm().with_structured_output(ExtractedComplaintData)
     chain = prompt | structured_llm
     
     try:
@@ -93,7 +121,7 @@ def completeness_node(state: QMSState):
         ("system", "You are a pharmaceutical compliance auditor. Evaluate whether the complaint data contains essential fields: customer name, product name, batch/lot number, affected quantity, and complaint description. Do not invent missing info."),
         ("human", "Extracted Complaint Data:\n{data}")
     ])
-    structured_llm = llm.with_structured_output(CompletenessCheckData)
+    structured_llm = get_llm().with_structured_output(CompletenessCheckData)
     chain = prompt | structured_llm
     try:
         result = chain.invoke({"data": str(data)})
@@ -109,7 +137,7 @@ def assess_risk_node(state: QMSState):
         ("system", "You are a pharmaceutical QA Compliance expert. Based on the extracted complaint data, generate a concise AI summary, evaluate risk level, patient safety impact, root cause hypothesis, and CAPA recommendations."),
         ("human", "Complaint Details:\n{complaint_info}")
     ])
-    structured_llm = llm.with_structured_output(RiskAssessmentData)
+    structured_llm = get_llm().with_structured_output(RiskAssessmentData)
     chain = prompt | structured_llm
     try:
         result = chain.invoke({"complaint_info": str(data)})
