@@ -189,6 +189,65 @@ class TestDuplicateDetection:
         assert response.status_code == 422
 
 
+class TestExtractRequestContract:
+    """The frontend posts current_state with every extract call.
+
+    PromptRequest did not declare the field, so Pydantic discarded it silently:
+    the request still returned 200 and every delta edit was lost.
+    """
+
+    def test_current_state_is_accepted(self, client):
+        from main import PromptRequest
+
+        req = PromptRequest(
+            prompt="change 500 to 50",
+            current_state={"customerName": "Apollo Pharmacy", "affectedQuantity": "500"},
+        )
+        assert req.current_state == {
+            "customerName": "Apollo Pharmacy",
+            "affectedQuantity": "500",
+        }
+
+    def test_current_state_is_optional(self, client):
+        from main import PromptRequest
+
+        req = PromptRequest(prompt="new complaint text")
+        assert req.current_state is None
+
+    def test_extracted_data_receives_current_state(self, client, monkeypatch):
+        """The value must reach the graph, not just the request model."""
+        import workflow as workflow_module
+
+        captured = {}
+
+        class FakeWorkflow:
+            def invoke(self, state):
+                captured.update(state)
+                return {
+                    "extracted_data": {"customerName": "Apollo Pharmacy"},
+                    "completeness_data": None,
+                    "risk_assessment": None,
+                }
+
+        monkeypatch.setattr(workflow_module, "compiled_workflow", FakeWorkflow())
+        monkeypatch.setattr("main.compiled_workflow", FakeWorkflow(), raising=False)
+
+        response = client.post(
+            "/api/extract",
+            json={
+                "prompt": "change 500 to 50",
+                "current_state": {"customerName": "Apollo Pharmacy", "affectedQuantity": "500"},
+            },
+        )
+
+        assert response.status_code == 200
+        assert captured["raw_prompt"] == "change 500 to 50"
+        assert captured["extracted_data"] == {
+            "customerName": "Apollo Pharmacy",
+            "affectedQuantity": "500",
+        }
+
+
 class TestStatusWorkflow:
     def test_valid_status_is_accepted(self, client):
         created = client.post("/api/complaints", json=make_complaint())
