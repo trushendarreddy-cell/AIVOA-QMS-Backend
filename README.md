@@ -68,19 +68,43 @@ The main application is split around the work the system performs:
 
 ## Run locally
 
-Install the Python dependencies:
+### Requirements
+
+- Python 3.11 or newer
+- MySQL 8, or set `DATABASE_URL` to any SQLAlchemy-supported database
+
+### Install and run
 
 ```bash
 pip install -r requirements.txt
-```
-
-Configure the required environment variables for the database and model provider, then start the API:
-
-```bash
+cp .env.example .env      # then fill in the values below
 uvicorn main:app --reload
 ```
 
-The API will be available at the local Uvicorn address shown in the terminal.
+Interactive API docs are then at `http://localhost:8000/docs`.
+
+### Environment
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | yes | SQLAlchemy connection string, e.g. `mysql+pymysql://user:pass@localhost:3306/aivoa_qms` |
+| `GROQ_API_KEY` | for AI features | Key for the extraction and risk-assessment workflow |
+| `GROQ_MODEL` | no | Defaults to `llama-3.3-70b-versatile` |
+
+Without `GROQ_API_KEY` the app still starts and the complaint CRUD,
+duplicate-check, and status endpoints work. Only extraction and risk
+assessment need the model.
+
+### Tests
+
+```bash
+pip install pytest httpx
+pytest -q
+```
+
+16 tests over duplicate detection and the complaint status workflow, run
+against an in-memory SQLite database so no MySQL server or API key is
+needed. CI runs them on every push.
 
 ## Project structure
 
@@ -99,6 +123,10 @@ This is a working product-oriented prototype. It demonstrates the complaint-proc
 ## Related repository
 
 The React interface for the workflow lives in **AIVOA-QMS-Frontend**.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ## Author
 
