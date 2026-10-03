@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 from sqlalchemy.orm import Session
 from database import get_db, ComplaintDB, init_db
 from workflow import compiled_workflow
@@ -22,6 +23,11 @@ app.add_middleware(
 
 class PromptRequest(BaseModel):
     prompt: str
+    # The frontend sends the fields already on the form so a follow-up
+    # instruction can edit them in place instead of re-extracting from
+    # scratch. This was missing, so Pydantic dropped the field silently and
+    # every delta edit was lost while the request still returned 200.
+    current_state: Optional[dict] = None
 
 class DuplicateCheckRequest(BaseModel):
     customerName: str
@@ -79,7 +85,7 @@ def extract_complaint_workflow(req: PromptRequest):
     try:
         initial_state = {
             "raw_prompt": req.prompt,
-            "extracted_data": None,
+            "extracted_data": req.current_state,
             "completeness_data": None,
             "risk_assessment": None,
             "validation_status": "pending",
